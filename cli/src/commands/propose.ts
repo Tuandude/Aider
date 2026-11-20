@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { Command } from 'commander';
 import { ProposeBlockedError, propose, replaceDiagramBlock } from 'aider-core';
-import { createGeminiCompleter } from '../gemini';
+import { createOpenAiCompatibleCompleter, readLlmConfig } from '../llm';
 
 export interface ProposeCommandOptions {
   dryRun?: boolean;
@@ -16,9 +16,13 @@ export interface ProposeCommandOptions {
  * Không có fallback: LLM lỗi thì thoát khác 0 và không ghi gì.
  */
 export async function runPropose(options: ProposeCommandOptions): Promise<number> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    console.error('Lỗi: thiếu GEMINI_API_KEY. `propose` cần LLM; `verify` thì không.');
+  const llm = readLlmConfig();
+  if (!llm) {
+    console.error(
+      'Lỗi: thiếu AIDER_LLM_API_KEY. `propose` cần LLM; `verify` thì không.\n' +
+        '  AIDER_LLM_BASE_URL  (mặc định http://127.0.0.1:8317/v1)\n' +
+        '  AIDER_LLM_MODEL     (mặc định glm-flash)'
+    );
     return 2;
   }
 
@@ -30,7 +34,7 @@ export async function runPropose(options: ProposeCommandOptions): Promise<number
     const result = await propose({
       repoPath,
       readmeFile,
-      complete: createGeminiCompleter(apiKey),
+      complete: createOpenAiCompatibleCompleter(llm),
     });
 
     if (result.rejected.length > 0) {

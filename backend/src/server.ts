@@ -4,11 +4,11 @@ import dotenv from 'dotenv';
 import axios from 'axios';
 import crypto from 'crypto';
 import path from 'path';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { GitHubService } from './services/github';
 import { filterDiff, limitDiffSize } from './utils/diffFilter';
 import { loadProjectDocs } from './utils/docsLoader';
 import { checkDiagram, renderDiagramCheck, renderProposedDiagram } from './utils/diagramCheck';
+import { DEFAULT_BASE_URL, DEFAULT_MODEL, createCompleter, parseJsonResponse, readLlmConfig } from './llm';
 
 dotenv.config();
 
@@ -21,8 +21,6 @@ app.use(express.json({
     req.rawBody = buf;
   }
 }));
-
-const MODEL = 'gemini-2.0-flash';
 
 function getModifiedFiles(diff: string): string[] {
   const files: string[] = [];
@@ -43,18 +41,16 @@ app.post('/api/commit', async (req, res) => {
   const { fileTree, currentMermaid, projectToken } = req.body;
   const rawDiff = req.body.diff || '';
   const diff = limitDiffSize(filterDiff(rawDiff));
-  const apiKey = req.headers['x-gemini-api-key'] || req.body.geminiApiKey || process.env.GEMINI_API_KEY;
+  const apiKey = req.headers['x-llm-api-key'] || req.body.llmApiKey || process.env.AIDER_LLM_API_KEY;
   console.log(`Received commit request for token: ${projectToken}`);
 
   if (!apiKey) {
-    const message = 'GEMINI_API_KEY is missing. Provide it in the x-gemini-api-key header or configure it on the server.';
+    const message = 'AIDER_LLM_API_KEY is missing. Provide it in the x-llm-api-key header or configure it on the server.';
     console.error(message);
     return res.status(500).json({ error: message });
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey as string);
-
     const systemInstruction = `You are an expert system architect and technical writer.
 You will analyze a code diff and directory structure, then update the Mermaid diagram representing the codebase.
 Every node you add MUST correspond to an existing file in the provided directory structure. Do not invent services, databases, or components.
@@ -64,12 +60,8 @@ You must return a JSON response containing:
 3. pmSummary: friendly Vietnamese summary.
 Return ONLY raw JSON. No markdown ticks.`;
 
-    const model = genAI.getGenerativeModel({
-      model: MODEL,
-      systemInstruction
-    });
+    const prompt = `${systemInstruction}
 
-    const prompt = `
 Current Mermaid Diagram:
 ${currentMermaid}
 
@@ -80,10 +72,12 @@ Git Diff:
 ${diff}
 `;
 
-    const response = await model.generateContent(prompt);
-    const responseText = response.response.text();
-    const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-    const parsed = JSON.parse(cleanJson);
+    const complete = createCompleter({
+      baseUrl: (process.env.AIDER_LLM_BASE_URL ?? DEFAULT_BASE_URL).replace(/\/$/, ''),
+      apiKey: apiKey as string,
+      model: process.env.AIDER_LLM_MODEL ?? DEFAULT_MODEL,
+    });
+    const parsed = parseJsonResponse(await complete(prompt));
 
     res.json({
       commitMessage: parsed.commitMessage,
@@ -162,9 +156,9 @@ app.post('/api/webhook/github', async (req: express.Request, res: express.Respon
   res.status(202).send('PR analysis started.');
 
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error('GEMINI_API_KEY is not configured on the server.');
+    const llmConfig = readLlmConfig();
+    if (!llmConfig) {
+      throw new Error('AIDER_LLM_API_KEY is not configured on the server.');
     }
 
     const rawDiff = await githubService.downloadDiff(diffUrl);
@@ -196,7 +190,6 @@ app.post('/api/webhook/github', async (req: express.Request, res: express.Respon
     // Kiểm chứng sơ đồ bằng đúng luật của `aider verify`, trước khi nói bất cứ điều gì về nó.
     const diagramCheck = readmeMarkdown ? checkDiagram(readmeMarkdown, fileTree) : null;
 
-    const genAI = new GoogleGenerativeAI(apiKey);
     const systemInstruction = `You are an expert system architect, code reviewer, and technical writer.
 You will analyze a code diff, directory structure, and project documentation context, then:
 1. Review the code changes for logic bugs, performance issues, security vulnerabilities, and clean code practices with a focus on:
@@ -219,12 +212,9 @@ You must return a JSON response containing:
 5. reviewFeedback: A detailed review feedback in Vietnamese, pointing out specific suggestions, bugs, or domain violations.
 Return ONLY raw JSON. No markdown ticks.`;
 
-    const model = genAI.getGenerativeModel({
-      model: MODEL,
-      systemInstruction
-    });
+    const complete = createCompleter(llmConfig);
+    const prompt = `${systemInstruction}
 
-    const prompt = `
 Current Mermaid Diagram:
 ${currentMermaid}
 
@@ -237,10 +227,7 @@ ${docsContext}
 Git Diff to Review:
 ${diff}
 `;
-    const response = await model.generateContent(prompt);
-    const responseText = response.response.text();
-    const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-    const parsed = JSON.parse(cleanJson);
+    const parsed = parseJsonResponse(await complete(prompt));
 
     const pmSummary: string = parsed.pmSummary;
     const proposedMermaid: string = parsed.proposedMermaid || '';

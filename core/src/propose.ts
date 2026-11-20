@@ -51,7 +51,7 @@ export async function propose(options: ProposeOptions): Promise<ProposeResult> {
   }
 
   if (!options.complete) {
-    throw new ProposeBlockedError('Không có hàm gọi LLM được cấu hình (cần GEMINI_API_KEY).');
+    throw new ProposeBlockedError('Không có hàm gọi LLM được cấu hình (thiếu AIDER_LLM_API_KEY).');
   }
 
   const fileTree = options.fileTree ?? readFileTree(repoPath);

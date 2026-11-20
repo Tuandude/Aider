@@ -33,7 +33,7 @@ Chỉ dùng khi bạn cần phản hồi tức thì, hoặc khi bot phải chạ
 
 ## Các thành phần cần chuẩn bị (chỉ cho cách 2)
 Để chạy Aider Bot, bạn cần:
-1. **Gemini API Key**: Dùng để phân tích code diff và sinh sơ đồ/tóm tắt (Lấy tại [Google AI Studio](https://aistudio.google.com/)).
+1. **LLM API Key**: Dùng để phân tích code diff và sinh sơ đồ/tóm tắt. Aider gọi một API tương thích OpenAI (`POST /chat/completions`), nên dùng được bất kỳ nhà cung cấp nào theo chuẩn đó.
 2. **GitHub Personal Access Token (PAT)**: Token có quyền `repo` để Bot có thể đọc diff và tự động ghi nhận xét (comment) lên Pull Request.
 3. **Webhook Secret**: Một chuỗi ký tự tự chọn để bảo mật kết nối giữa GitHub và Backend Server của bạn.
 
@@ -67,7 +67,7 @@ Backend nằm trong `backend/`, nhưng nó import `aider-core` từ workspace, n
 # Từ thư mục gốc Aider/
 docker build -t aider-backend .
 docker run -d --name aider -p 8085:8085 \
-  -e GEMINI_API_KEY=... \
+  -e AIDER_LLM_API_KEY=... \
   -e GITHUB_TOKEN=... \
   -e WEBHOOK_SECRET=... \
   aider-backend
@@ -77,16 +77,20 @@ docker rm -f aider
 
 #### Cấu hình các biến môi trường (Environment Variables):
 Bạn cần thiết lập các biến môi trường sau cho Server của mình:
-- `GEMINI_API_KEY`: API Key lấy từ Google AI Studio.
+- `AIDER_LLM_API_KEY`: Khoá gọi mô hình. **Bắt buộc** — thiếu nó, `/api/commit` trả HTTP 500 và webhook không phân tích được PR.
+- `AIDER_LLM_BASE_URL`: Endpoint tương thích OpenAI. Mặc định `http://127.0.0.1:8317/v1`.
+- `AIDER_LLM_MODEL`: Tên model. Mặc định `glm-flash`.
 - `GITHUB_TOKEN`: GitHub PAT bạn vừa tạo ở Bước 1.
 - `WEBHOOK_SECRET`: Một mật khẩu tự chọn để xác thực webhook (ví dụ: `my-super-secret-123`).
+
+> **Endpoint mặc định là `127.0.0.1`.** Nếu chạy trong container hoặc trên cloud, phải đặt `AIDER_LLM_BASE_URL` trỏ tới một endpoint mà server truy cập được — `127.0.0.1` trong container là chính container đó.
 
 > **`WEBHOOK_SECRET` là bắt buộc.** Thiếu biến này, server **từ chối khởi động** (exit code `1`) chứ không chạy ở chế độ bỏ xác thực. Route webhook là đầu vào công khai duy nhất; nếu bỏ qua xác thực chữ ký, bất kỳ ai biết URL đều gửi được payload giả để bot bình luận lên PR của bạn.
 
 *Lưu ý: Nếu sử dụng Cloud Run, bạn cần cấu hình cờ `--no-cpu-throttling` để giữ CPU luôn hoạt động cho các tác vụ ngầm (tránh bị Cloud Run tắt container trước khi AI phân tích xong). Chạy lệnh sau để thiết lập biến môi trường và tắt CPU throttling:*
 ```bash
 gcloud run services update aider-backend \
-  --update-env-vars GEMINI_API_KEY=YOUR_GEMINI_KEY,GITHUB_TOKEN=YOUR_GITHUB_TOKEN,WEBHOOK_SECRET=YOUR_SECRET \
+  --update-env-vars AIDER_LLM_API_KEY=YOUR_KEY,AIDER_LLM_BASE_URL=YOUR_ENDPOINT,AIDER_LLM_MODEL=glm-flash,GITHUB_TOKEN=YOUR_GITHUB_TOKEN,WEBHOOK_SECRET=YOUR_SECRET \
   --no-cpu-throttling \
   --region us-central1
 ```
@@ -113,7 +117,7 @@ gcloud run services update aider-backend \
 Giờ đây mỗi khi có Pull Request mới được mở hoặc cập nhật trên repository của bạn:
 1. GitHub sẽ gửi sự kiện Webhook sang Backend Server của bạn.
 2. Server xác thực chữ ký bảo mật.
-3. Server tải diff, gửi tới Gemini để phân tích.
+3. Server tải diff, gửi tới LLM để phân tích.
 4. Bot tự động bình luận sơ đồ Mermaid sống và nhận xét kiến trúc trực tiếp trên PR!
 
-Lưu ý: `aider verify` (kiểm chứng sơ đồ với file thật) chạy hoàn toàn cục bộ và không cần backend, GitHub token, hay Gemini API key. Backend chỉ cần thiết nếu bạn muốn bot tự bình luận lên Pull Request.
+Lưu ý: `aider verify` (kiểm chứng sơ đồ với file thật) chạy hoàn toàn cục bộ và không cần backend, GitHub token, hay LLM API key. Backend chỉ cần thiết nếu bạn muốn bot tự bình luận lên Pull Request.

@@ -8,7 +8,6 @@
     "dev": "ts-node-dev --respawn src/server.ts"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
     "aider-core": "1.0.0",
     "axios": "^1.19.0",
     "cors": "^2.8.5",

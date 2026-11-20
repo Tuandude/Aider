@@ -34,7 +34,7 @@ node cli/dist/index.js verify --path /đường/dẫn/repo
 # Máy đọc
 node cli/dist/index.js verify --json
 
-# Đề xuất cập nhật sơ đồ (cần GEMINI_API_KEY)
+# Đề xuất cập nhật sơ đồ (cần AIDER_LLM_API_KEY)
 node cli/dist/index.js propose --dry-run
 node cli/dist/index.js propose --write
 
@@ -43,6 +43,16 @@ node cli/dist/index.js init
 ```
 
 `verify` trả exit code `1` khi có node không ánh xạ tới file nào — cắm thẳng vào CI (xem `.github/workflows/aider-verify.yml`).
+
+### Cấu hình LLM
+
+`propose` gọi một API tương thích OpenAI (`POST /chat/completions`). Không cần SDK, chỉ cần ba biến môi trường:
+
+| Biến | Mặc định | Ý nghĩa |
+|---|---|---|
+| `AIDER_LLM_API_KEY` | *(bắt buộc)* | Khoá gọi mô hình. Thiếu nó, `propose` thoát code `2` và `verify` không bị ảnh hưởng. |
+| `AIDER_LLM_BASE_URL` | `http://127.0.0.1:8317/v1` | Endpoint. Đổi sang nhà cung cấp khác nếu cần. |
+| `AIDER_LLM_MODEL` | `glm-flash` | Tên model gửi trong request. |
 
 ## Tự động bình luận lên Pull Request
 
@@ -62,8 +72,10 @@ Có một service Express nhận webhook GitHub, dùng khi bạn muốn phản h
 cd backend
 npm install
 npm run build
-GEMINI_API_KEY=... GITHUB_TOKEN=... WEBHOOK_SECRET=... npm start
+AIDER_LLM_API_KEY=... GITHUB_TOKEN=... WEBHOOK_SECRET=... npm start
 ```
+
+Cùng ba biến `AIDER_LLM_*` như trên. `POST /api/commit` còn nhận khoá theo từng request qua header `x-llm-api-key`, để client không phải chia sẻ khoá với server.
 
 Xem `docs/self_hosting_guide.md` để triển khai bằng Docker. Lưu ý: build context là thư mục gốc `Aider/`, không phải `backend/`.
 
