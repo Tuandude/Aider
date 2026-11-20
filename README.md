@@ -6,11 +6,48 @@ Aider giữ cho sơ đồ kiến trúc trong `README.md` không trôi khỏi cod
 
 <!-- AIDER:START -->
 ```mermaid
-graph TD
-  SERVER[Server path=backend/src/server.ts] --> GITHUB[GitHub Service path=backend/src/services/github.ts]
-  SERVER --> DIFF[diffFilter path=backend/src/utils/diffFilter.ts]
-  SERVER --> DOCS[docsLoader path=backend/src/utils/docsLoader.ts]
-  SERVER --> CHECK[diagramCheck path=backend/src/utils/diagramCheck.ts]
+flowchart LR
+  subgraph CORE["⚖️ core — bộ luật tất định"]
+    VERIFY["verify<br/>path=core/src/verify.ts"]
+    MERMAID["mermaid<br/>path=core/src/mermaid.ts"]
+    RESOLVE["resolve<br/>path=core/src/resolve.ts"]
+    PROPOSE["propose<br/>path=core/src/propose.ts"]
+  end
+
+  subgraph CLI["⌨️ cli — dòng lệnh"]
+    CMD_VERIFY["verify<br/>path=cli/src/commands/verify.ts"]
+    CMD_PROPOSE["propose<br/>path=cli/src/commands/propose.ts"]
+    LLM_CLI["llm<br/>path=cli/src/llm.ts"]
+    REPORT["report<br/>path=cli/src/report.ts"]
+  end
+
+  subgraph BACKEND["🌐 backend — service webhook"]
+    SERVER["server<br/>path=backend/src/server.ts"]
+    DIAGRAM_CHECK["diagramCheck<br/>path=backend/src/utils/diagramCheck.ts"]
+    DIFF_FILTER["diffFilter<br/>path=backend/src/utils/diffFilter.ts"]
+    DOCS_LOADER["docsLoader<br/>path=backend/src/utils/docsLoader.ts"]
+    GITHUB_SVC["GitHub Service<br/>path=backend/src/services/github.ts"]
+    LLM_BACKEND["llm<br/>path=backend/src/llm.ts"]
+  end
+
+  VERIFY --> MERMAID & RESOLVE
+  PROPOSE --> VERIFY
+  CMD_VERIFY --> REPORT
+  CMD_PROPOSE --> LLM_CLI
+  SERVER --> DIAGRAM_CHECK & DIFF_FILTER & DOCS_LOADER & GITHUB_SVC & LLM_BACKEND
+
+  classDef core fill:#dcfce7,stroke:#15803d,stroke-width:2px,color:#14532d
+  classDef cli fill:#dbeafe,stroke:#1d4ed8,stroke-width:2px,color:#1e3a8a
+  classDef backend fill:#ffedd5,stroke:#c2410c,stroke-width:2px,color:#7c2d12
+  class VERIFY,MERMAID,RESOLVE,PROPOSE core
+  class CMD_VERIFY,CMD_PROPOSE,LLM_CLI,REPORT cli
+  class SERVER,DIAGRAM_CHECK,DIFF_FILTER,DOCS_LOADER,GITHUB_SVC,LLM_BACKEND backend
+  style CORE fill:#f0fdf4,stroke:#15803d,stroke-width:2px
+  style CLI fill:#eff6ff,stroke:#1d4ed8,stroke-width:2px
+  style BACKEND fill:#fff7ed,stroke:#c2410c,stroke-width:2px
+
+  %% Mỗi cạnh là một import thật trong mã nguồn; không có cạnh nào do suy đoán.
+  %% Ba khối rời nhau vì core/cli/backend không import lẫn nhau bằng đường dẫn tương đối.
 ```
 <!-- AIDER:END -->
 

@@ -83,3 +83,33 @@ test('extractDiagramBlock báo lỗi khi thiếu AIDER:END', () => {
     MermaidParseError
   );
 });
+
+test('bỏ qua subgraph, end và dòng style, không sinh node rác', () => {
+  const body = [
+    'flowchart LR',
+    '  subgraph BACKEND["Backend"]',
+    '    SERVER["server path=backend/src/server.ts"]',
+    '  end',
+    '  classDef core fill:#0b3,stroke:#093',
+    '  class SERVER core',
+    '  style SERVER stroke-width:2px',
+  ].join('\n');
+  const { nodes, edges } = parseMermaid(body);
+
+  assert.deepEqual(nodes.map((node) => node.id), ['SERVER']);
+  assert.equal(nodes[0].path, 'backend/src/server.ts');
+  assert.equal(nodes[0].label, 'server');
+  assert.equal(edges.length, 0);
+});
+
+test('nhãn có <br/> vẫn đọc ra path và bỏ thẻ xuống dòng', () => {
+  const node = parseNodeDeclaration('V["verify<br/>path=core/src/verify.ts"]');
+  assert.equal(node?.id, 'V');
+  assert.equal(node?.path, 'core/src/verify.ts');
+  assert.doesNotMatch(node!.label, /<br/);
+});
+
+test('bỏ qua dòng direction trong subgraph', () => {
+  const { nodes } = parseMermaid('flowchart LR\n  subgraph X\n  direction TB\n  A[One]\n  end');
+  assert.deepEqual(nodes.map((node) => node.id), ['A']);
+});

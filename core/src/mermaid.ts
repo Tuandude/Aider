@@ -16,6 +16,18 @@ export class MermaidParseError extends Error {}
 
 const NODE_DECLARATION = /^([A-Za-z_][\w-]*)\s*([\[\(\{])([^\]\)\}]+)([\]\)\}])\s*$/;
 
+/** Dòng mở/đóng nhóm và dòng trang trí, không phải node cũng không phải cạnh. */
+const STRUCTURAL_LINE = /^(subgraph\b|end\s*$|classDef\b|class\b|style\b|linkStyle\b|click\b|direction\b)/i;
+
+/**
+ * Bóc thẻ xuống dòng trong nhãn. Mermaid hiển thị `<br/>` thành xuống dòng; parser chỉ
+ * giữ phần chữ để `path=` và so khớp tên file không bị dính ký tự trang trí.
+ */
+function stripLineBreaks(label: string): string {
+  return label.replace(/<br\s*\/?>/gi, ' ');
+}
+
+
 /**
  * Trích khối sơ đồ giữa `<!-- AIDER:START -->` và `<!-- AIDER:END -->` trong một tài liệu Markdown.
  * Trả về null khi không có khối.
@@ -51,6 +63,8 @@ export function extractDiagramBlock(markdown: string): MermaidBlock | null {
  *
  * Nhận dạng node: `ID[Label]`, `ID(Label)`, `ID{Label}`, hoặc `ID` trần.
  * Nhận dạng cạnh: `A --> B`, `A -->|label| B`.
+ * Dòng cấu trúc (`subgraph`, `end`, `classDef`, `style`, …) bị bỏ qua: chúng trang trí
+ * sơ đồ chứ không khai báo thành phần nào ánh xạ tới file.
  */
 export function parseMermaid(body: string, firstLine = 1): ParsedDiagram {
   const nodes = new Map<string, DiagramNode>();
@@ -61,6 +75,9 @@ export function parseMermaid(body: string, firstLine = 1): ParsedDiagram {
     const lineNumber = firstLine + index;
 
     if (!line || line.startsWith('%%') || /^graph\s+/i.test(line) || /^flowchart\s+/i.test(line)) {
+      return;
+    }
+    if (STRUCTURAL_LINE.test(line)) {
       return;
     }
 
@@ -136,11 +153,17 @@ export function parseNodeDeclaration(raw: string): DiagramNode | null {
   }
 
   const [, id, , label] = match;
-  const trimmedLabel = label.trim();
-  const inlinePath = trimmedLabel.match(/\bpath\s*=\s*([^\s\]]+)/);
+  const trimmedLabel = stripLineBreaks(label.trim());
+  // Nhãn Mermaid thường được bọc ngoặc kép; `path=` dừng ở ngoặc để không nuốt dấu đóng.
+  const inlinePath = trimmedLabel.match(/\bpath\s*=\s*([^\s\]"']+)/);
+  const labelText = trimmedLabel
+    .replace(/\bpath\s*=\s*[^\s\]"']+/g, '')
+    .replace(/^["']|["']$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
   return {
     id,
-    label: trimmedLabel.replace(/\bpath\s*=\s*[^\s\]]+\s*/g, '').trim() || id,
+    label: labelText || id,
     ...(inlinePath ? { path: inlinePath[1] } : {}),
     line: 0,
   };
