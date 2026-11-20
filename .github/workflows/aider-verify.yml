@@ -27,12 +27,12 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Test
-        run: npm test
-
       # Không cần secret, không gọi mạng: sơ đồ hoặc ánh xạ tới file thật, hoặc CI đỏ.
       - name: Verify architecture diagram
         run: node cli/dist/index.js verify
+
+      - name: Test
+        run: npm test
 
   # Bình luận kết quả kiểm chứng lên PR. Không cần server, không có URL công khai,
   # và checkout cả repo nên kiểm tra được cả cạnh lệch.
