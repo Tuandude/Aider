@@ -64,6 +64,24 @@ Không cần máy chủ. Job `review` trong `.github/workflows/aider-verify.yml`
 node cli/dist/index.js verify --markdown > report.md
 ```
 
+### Bước AI trên PR (tùy chọn)
+
+Job `review` có thêm một bước gọi `propose` và nối đề xuất của mô hình vào cuối bình luận. Nó chỉ chạy khi repo có:
+
+| Loại | Tên | Giá trị |
+|---|---|---|
+| Variable | `AIDER_AI_REVIEW` | `on` để bật |
+| Secret | `AIDER_LLM_API_KEY` | khoá gọi mô hình |
+| Variable | `AIDER_LLM_BASE_URL` | ví dụ `https://api-cdn.deploy.com/api/v1` |
+| Variable | `AIDER_LLM_MODEL` | ví dụ `zai-org/glm-5.3-flash` |
+
+Bước này **không bao giờ làm đỏ CI**. `propose` chỉ đề xuất trên nền sơ đồ đang đúng, và tự loại mọi node không kèm đường dẫn file có thật — nên mô hình sai thì kết quả tệ nhất là không có đề xuất, không phải sơ đồ bịa. Thiếu khoá hoặc endpoint lỗi thì bình luận ghi rõ lý do.
+
+Hai điều cần biết trước khi bật:
+
+- **PR mở từ fork không nhận được secret.** Bước AI tự bỏ qua ở đó; phần kiểm chứng tất định vẫn chạy.
+- **Variables là công khai.** Chỉ `AIDER_LLM_API_KEY` nằm trong Secrets; đừng bao giờ đặt khoá vào Variables.
+
 ## Backend (tùy chọn, không cần cho CI)
 
 Có một service Express nhận webhook GitHub, dùng khi bạn muốn phản hồi tức thì thay vì chờ Actions, hoặc dùng ngoài GitHub:

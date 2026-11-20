@@ -23,6 +23,17 @@ Chép hai job trong `.github/workflows/aider-verify.yml` của repo này vào re
 
 Job `review` tự bình luận lên PR và cập nhật bình luận cũ thay vì thêm mới.
 
+Muốn bot **đề xuất sơ đồ bằng AI** ngay trên PR, bật thêm bốn mục trong Settings → Secrets and variables → Actions:
+
+| Loại | Tên | Giá trị |
+|---|---|---|
+| Variable | `AIDER_AI_REVIEW` | `on` |
+| Secret | `AIDER_LLM_API_KEY` | khoá gọi mô hình |
+| Variable | `AIDER_LLM_BASE_URL` | endpoint tương thích OpenAI |
+| Variable | `AIDER_LLM_MODEL` | tên model |
+
+Variables là công khai; chỉ khoá nằm trong Secrets. PR mở từ fork không nhận được secret nên bước AI tự bỏ qua ở đó, còn phần kiểm chứng tất định vẫn chạy.
+
 Giới hạn: PR mở từ fork sẽ không bình luận được (token chỉ đọc trên fork). Nếu cần, đổi trigger sang `pull_request_target` — nhưng đọc kỹ cảnh báo bảo mật của GitHub trước khi làm.
 
 ### Cách 2 — Backend webhook
