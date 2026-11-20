@@ -7,7 +7,6 @@ Aider giữ cho sơ đồ kiến trúc trong `README.md` không trôi khỏi cod
 <!-- AIDER:START -->
 ```mermaid
 graph TD
-  SERVER --> AUTH[Auth Service]
   SERVER[Server path=backend/src/server.ts] --> GITHUB[GitHub Service path=backend/src/services/github.ts]
   SERVER --> DIFF[diffFilter path=backend/src/utils/diffFilter.ts]
   SERVER --> DOCS[docsLoader path=backend/src/utils/docsLoader.ts]
