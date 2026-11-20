@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "build": "npm run build -w aider-core && npm run build -w aider-cli && npm run build -w gitstory-backend",
-    "test": "npm run build -w aider-core && node --test \"core/dist/__tests__/*.test.js\""
+    "test": "npm run build -w aider-core && node --test core/dist/__tests__/mermaid.test.js core/dist/__tests__/resolve.test.js core/dist/__tests__/verify.test.js core/dist/__tests__/propose.test.js"
   },
   "devDependencies": {
     "@types/node": "^20.8.0",
