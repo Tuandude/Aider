@@ -121,7 +121,8 @@ test('propose ghép LLM trả về thành sơ đồ đã kiểm chứng', async 
 
   assert.equal(result.nodes.length, 2);
   assert.equal(result.rejected.length, 1);
-  assert.match(result.diagram, /SERVER\[Server path=src\/server\.ts\]/);
+  assert.match(result.diagram, /SERVER\[Server\]/);
+  assert.match(result.diagram, /%% path SERVER=src\/server\.ts/);
   assert.match(result.diagram, /SERVER --> FILTER/);
   assert.doesNotMatch(result.diagram, /FAKE/);
 });
@@ -160,7 +161,7 @@ test('replaceDiagramBlock ném lỗi khi thiếu khối', () => {
   assert.throws(() => replaceDiagramBlock('# No block', 'graph TD'), /không có khối/);
 });
 
-test('renderDiagram vẽ đủ node và cạnh có nhãn', () => {
+test('renderDiagram vẽ đủ node và cạnh có nhãn, đường dẫn nằm trong chú thích', () => {
   const diagram = renderDiagram(
     [
       { id: 'A', label: 'One', path: 'src/a.ts', line: 0 },
@@ -168,8 +169,10 @@ test('renderDiagram vẽ đủ node và cạnh có nhãn', () => {
     ],
     [{ from: 'A', to: 'B', label: 'gọi', line: 0 }]
   );
-  assert.match(diagram, /A\[One path=src\/a\.ts\]/);
+  assert.match(diagram, /A\[One\]/);
+  assert.match(diagram, /%% path A=src\/a\.ts/);
   assert.match(diagram, /A -->\|gọi\| B/);
+  assert.doesNotMatch(diagram, /One path=/);
 });
 
 test('parseProposal báo lỗi khi thiếu mảng nodes', () => {

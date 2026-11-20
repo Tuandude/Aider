@@ -19,12 +19,19 @@ export function idFromPath(filePath: string, used: Set<string>): string {
   return id;
 }
 
-/** Vẽ lại sơ đồ Mermaid từ node và cạnh đã kiểm chứng. */
+/**
+ * Vẽ lại sơ đồ Mermaid từ node và cạnh đã kiểm chứng.
+ *
+ * Đường dẫn file nằm trong dòng chú thích `%%` chứ không nằm trong nhãn: người đọc chỉ
+ * cần thấy tên thành phần, còn `parseMermaid` vẫn đọc được đường dẫn để kiểm chứng.
+ */
 export function renderDiagram(nodes: DiagramNode[], edges: DiagramEdge[]): string {
   const lines = ['graph TD'];
   for (const node of nodes) {
-    const pathPart = node.path ? ` path=${node.path}` : '';
-    lines.push(`  ${node.id}[${node.label}${pathPart}]`);
+    lines.push(`  ${node.id}[${node.label}]`);
+    if (node.path) {
+      lines.push(`  %% path ${node.id}=${node.path}`);
+    }
   }
   for (const edge of edges) {
     const label = edge.label ? `|${edge.label}|` : '';

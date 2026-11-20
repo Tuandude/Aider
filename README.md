@@ -6,48 +6,68 @@ Aider giữ cho sơ đồ kiến trúc trong `README.md` không trôi khỏi cod
 
 <!-- AIDER:START -->
 ```mermaid
-flowchart LR
-  subgraph CORE["⚖️ core — bộ luật tất định"]
-    VERIFY["verify<br/>path=core/src/verify.ts"]
-    MERMAID["mermaid<br/>path=core/src/mermaid.ts"]
-    RESOLVE["resolve<br/>path=core/src/resolve.ts"]
-    PROPOSE["propose<br/>path=core/src/propose.ts"]
+flowchart TD
+  %% Mermaid xếp các nhóm rời nhau theo thứ tự khai báo từ phải sang trái, nên backend
+  %% đứng đầu trong nguồn để hình đọc từ trái sang phải là core -> cli -> backend.
+  subgraph BACKEND["🌐 backend — service webhook"]
+    direction TB
+    SERVER["server"]
+    DOCS_LOADER["docsLoader"]
+    GITHUB_SVC["GitHub Service"]
+    LLM_BACKEND["llm"]
+    DIAGRAM_CHECK["diagramCheck"]
+    DIFF_FILTER["diffFilter"]
+    SERVER --> DOCS_LOADER & GITHUB_SVC & LLM_BACKEND & DIAGRAM_CHECK & DIFF_FILTER
   end
 
   subgraph CLI["⌨️ cli — dòng lệnh"]
-    CMD_VERIFY["verify<br/>path=cli/src/commands/verify.ts"]
-    CMD_PROPOSE["propose<br/>path=cli/src/commands/propose.ts"]
-    LLM_CLI["llm<br/>path=cli/src/llm.ts"]
-    REPORT["report<br/>path=cli/src/report.ts"]
+    direction TB
+    CMD_VERIFY["verify"]
+    REPORT["report"]
+    CMD_PROPOSE["propose"]
+    LLM_CLI["llm"]
+    CMD_VERIFY --> REPORT
+    CMD_PROPOSE --> LLM_CLI
   end
 
-  subgraph BACKEND["🌐 backend — service webhook"]
-    SERVER["server<br/>path=backend/src/server.ts"]
-    DIAGRAM_CHECK["diagramCheck<br/>path=backend/src/utils/diagramCheck.ts"]
-    DIFF_FILTER["diffFilter<br/>path=backend/src/utils/diffFilter.ts"]
-    DOCS_LOADER["docsLoader<br/>path=backend/src/utils/docsLoader.ts"]
-    GITHUB_SVC["GitHub Service<br/>path=backend/src/services/github.ts"]
-    LLM_BACKEND["llm<br/>path=backend/src/llm.ts"]
+  subgraph CORE["⚖️ core — bộ luật tất định"]
+    direction TB
+    PROPOSE["propose"]
+    VERIFY["verify"]
+    MERMAID["mermaid"]
+    RESOLVE["resolve"]
+    PROPOSE --> VERIFY
+    VERIFY --> MERMAID & RESOLVE
   end
-
-  VERIFY --> MERMAID & RESOLVE
-  PROPOSE --> VERIFY
-  CMD_VERIFY --> REPORT
-  CMD_PROPOSE --> LLM_CLI
-  SERVER --> DIAGRAM_CHECK & DIFF_FILTER & DOCS_LOADER & GITHUB_SVC & LLM_BACKEND
 
   classDef core fill:#dcfce7,stroke:#15803d,stroke-width:2px,color:#14532d
   classDef cli fill:#dbeafe,stroke:#1d4ed8,stroke-width:2px,color:#1e3a8a
   classDef backend fill:#ffedd5,stroke:#c2410c,stroke-width:2px,color:#7c2d12
-  class VERIFY,MERMAID,RESOLVE,PROPOSE core
-  class CMD_VERIFY,CMD_PROPOSE,LLM_CLI,REPORT cli
-  class SERVER,DIAGRAM_CHECK,DIFF_FILTER,DOCS_LOADER,GITHUB_SVC,LLM_BACKEND backend
+  class PROPOSE,VERIFY,MERMAID,RESOLVE core
+  class CMD_VERIFY,REPORT,CMD_PROPOSE,LLM_CLI cli
+  class SERVER,DOCS_LOADER,GITHUB_SVC,LLM_BACKEND,DIAGRAM_CHECK,DIFF_FILTER backend
   style CORE fill:#f0fdf4,stroke:#15803d,stroke-width:2px
   style CLI fill:#eff6ff,stroke:#1d4ed8,stroke-width:2px
   style BACKEND fill:#fff7ed,stroke:#c2410c,stroke-width:2px
 
+  %% Mỗi dòng dưới đây gắn một node với file nguồn của nó. Chú thích không được vẽ ra
+  %% hình, nên sơ đồ chỉ hiện tên; bộ kiểm chứng vẫn đọc được đường dẫn.
   %% Mỗi cạnh là một import thật trong mã nguồn; không có cạnh nào do suy đoán.
   %% Ba khối rời nhau vì core/cli/backend không import lẫn nhau bằng đường dẫn tương đối.
+  %% path PROPOSE=core/src/propose.ts
+  %% path VERIFY=core/src/verify.ts
+  %% path MERMAID=core/src/mermaid.ts
+  %% path RESOLVE=core/src/resolve.ts
+  %% path CMD_VERIFY=cli/src/commands/verify.ts
+  %% path REPORT=cli/src/report.ts
+  %% path CMD_PROPOSE=cli/src/commands/propose.ts
+  %% path LLM_CLI=cli/src/llm.ts
+  %% path SERVER=backend/src/server.ts
+  %% path DOCS_LOADER=backend/src/utils/docsLoader.ts
+  %% path GITHUB_SVC=backend/src/services/github.ts
+  %% path LLM_BACKEND=backend/src/llm.ts
+  %% path DIAGRAM_CHECK=backend/src/utils/diagramCheck.ts
+  %% path DIFF_FILTER=backend/src/utils/diffFilter.ts
 ```
 <!-- AIDER:END -->
 
@@ -138,7 +158,15 @@ Xem `docs/self_hosting_guide.md` để triển khai bằng Docker. Lưu ý: buil
 
 ## Giới hạn
 
-Ánh xạ node → file dựa trên tên file, không dùng embedding hay LLM. Với repo có tên file khác xa khái niệm kiến trúc (ví dụ node `Auth Service` nhưng file tên `middleware.ts`), node đó sẽ bị báo `UNMAPPED`. Ghi `path` tường minh trong node để chỉ định chính xác.
+Ánh xạ node → file dựa trên tên file, không dùng embedding hay LLM. Với repo có tên file khác xa khái niệm kiến trúc (ví dụ node `Auth Service` nhưng file tên `middleware.ts`), node đó sẽ bị báo `UNMAPPED`. Khi cần chỉ định chính xác, thêm một dòng chú thích ngay dưới node:
+
+```mermaid
+graph TD
+  AUTH["Auth Service"]
+  %% path AUTH=src/middleware.ts
+```
+
+Chú thích `%%` không được Mermaid vẽ ra, nên hình chỉ còn tên thành phần — bộ kiểm chứng vẫn đọc được đường dẫn. Viết `path=...` ngay trong nhãn cũng được, nhưng đường dẫn sẽ hiện lên hình.
 
 ## License
 

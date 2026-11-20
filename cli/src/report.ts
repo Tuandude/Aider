@@ -69,7 +69,7 @@ export function printHumanReport(report: VerifyReport): void {
 
   const mapped = report.unmapped.length === 0
     ? 'Toàn bộ node đều ánh xạ tới file có thật.'
-    : 'Sửa sơ đồ hoặc khai báo path=<file> trong node.';
+    : 'Sửa sơ đồ hoặc thêm dòng %% path <ID>=<file> dưới node.';
   console.log(report.ok ? paint(color, colors.green, `✓ ${mapped}`) : paint(color, colors.dim, mapped));
 }
 
@@ -91,7 +91,7 @@ export function renderMarkdownReport(report: VerifyReport): string {
     for (const result of report.unmapped) {
       lines.push(`- \`${result.node.id}\` "${result.node.label}"${formatLine(result.node.line)}  ← ${result.reason}`);
     }
-    lines.push('', 'Sửa sơ đồ hoặc khai báo `path=<file>` trong node.');
+    lines.push('', 'Sửa sơ đồ hoặc thêm dòng `%% path <ID>=<file>` dưới node.');
   }
 
   if (report.ambiguous.length > 0) {

@@ -206,7 +206,7 @@ You will analyze a code diff, directory structure, and project documentation con
 
 You must return a JSON response containing:
 1. commitMessage: conventional commit format (feat/fix/chore)
-2. proposedMermaid: an optional updated graph. EVERY node MUST use an explicit path=<file path copied exactly from the directory structure>. Nodes without a real file path are discarded by the verifier.
+2. proposedMermaid: an optional updated graph. EVERY node MUST declare its source file on its own comment line, e.g. "%% path SERVER=backend/src/server.ts", with the path copied exactly from the directory structure. Keep the node label itself to the bare component name so the rendered graph stays readable. Nodes without a real file path are discarded by the verifier.
 3. pmSummary: friendly Vietnamese summary of what changed.
 4. reviewDecision: "APPROVE" | "REQUEST_CHANGES" | "COMMENT"
 5. reviewFeedback: A detailed review feedback in Vietnamese, pointing out specific suggestions, bugs, or domain violations.

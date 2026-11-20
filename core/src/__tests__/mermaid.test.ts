@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { extractDiagramBlock, MermaidParseError, parseMermaid, parseNodeDeclaration } from '../mermaid';
+import { extractDiagramBlock, MermaidParseError, parseMermaid, parseNodeDeclaration, parsePathComment } from '../mermaid';
 
 const SIMPLE = `
 graph TD
@@ -88,7 +88,7 @@ test('bỏ qua subgraph, end và dòng style, không sinh node rác', () => {
   const body = [
     'flowchart LR',
     '  subgraph BACKEND["Backend"]',
-    '    SERVER["server path=backend/src/server.ts"]',
+    '    SERVER["server"]',
     '  end',
     '  classDef core fill:#0b3,stroke:#093',
     '  class SERVER core',
@@ -97,7 +97,6 @@ test('bỏ qua subgraph, end và dòng style, không sinh node rác', () => {
   const { nodes, edges } = parseMermaid(body);
 
   assert.deepEqual(nodes.map((node) => node.id), ['SERVER']);
-  assert.equal(nodes[0].path, 'backend/src/server.ts');
   assert.equal(nodes[0].label, 'server');
   assert.equal(edges.length, 0);
 });
@@ -112,4 +111,64 @@ test('nhãn có <br/> vẫn đọc ra path và bỏ thẻ xuống dòng', () => 
 test('bỏ qua dòng direction trong subgraph', () => {
   const { nodes } = parseMermaid('flowchart LR\n  subgraph X\n  direction TB\n  A[One]\n  end');
   assert.deepEqual(nodes.map((node) => node.id), ['A']);
+});
+
+test('chú thích %% path gắn đường dẫn mà không đổi nhãn hiển thị', () => {
+  const body = [
+    'flowchart LR',
+    '  subgraph CORE["core"]',
+    '    VERIFY["verify"]',
+    '  end',
+    '  %% path VERIFY=core/src/verify.ts',
+  ].join('\n');
+  const { nodes } = parseMermaid(body);
+
+  assert.equal(nodes.length, 1);
+  assert.equal(nodes[0].label, 'verify');
+  assert.equal(nodes[0].path, 'core/src/verify.ts');
+});
+
+test('%% path đứng trước node vẫn áp dụng được', () => {
+  const { nodes } = parseMermaid('graph TD\n  %% path A=src/a.ts\n  A[One]');
+  assert.equal(nodes[0].path, 'src/a.ts');
+});
+
+test('%% path cho id không có trên sơ đồ bị bỏ qua', () => {
+  const { nodes } = parseMermaid('graph TD\n  A[One]\n  %% path GHOST=src/ghost.ts');
+  assert.deepEqual(nodes.map((node) => node.id), ['A']);
+  assert.equal(nodes[0].path, undefined);
+});
+
+test('path khai báo trong nhãn vẫn thắng chú thích, và bị bỏ khỏi nhãn', () => {
+  const body = 'graph TD\n  A[One path=src/inline.ts]\n  %% path A=src/comment.ts';
+  const { nodes } = parseMermaid(body);
+  assert.equal(nodes[0].path, 'src/inline.ts');
+  assert.equal(nodes[0].label, 'One');
+});
+
+test('cú pháp gộp A --> B & C sinh ra đủ cạnh', () => {
+  const { nodes, edges } = parseMermaid('graph TD\n  A --> B & C\n  D & E --> F');
+  const pairs = edges.map((edge) => `${edge.from}->${edge.to}`).sort();
+  assert.deepEqual(pairs, ['A->B', 'A->C', 'D->F', 'E->F']);
+  assert.deepEqual(nodes.map((node) => node.id).sort(), ['A', 'B', 'C', 'D', 'E', 'F']);
+});
+
+test('dấu & trong nhãn không bị tách thành cạnh', () => {
+  const { nodes, edges } = parseMermaid('graph TD\n  A["R&D"] --> B["Sales & Marketing"]');
+  assert.equal(edges.length, 1);
+  assert.equal(nodes.find((node) => node.id === 'A')?.label, 'R&D');
+  assert.equal(nodes.find((node) => node.id === 'B')?.label, 'Sales & Marketing');
+});
+
+test('cạnh gộp giữ nhãn cho mọi cặp', () => {
+  const { edges } = parseMermaid('graph TD\n  A -->|gọi| B & C');
+  assert.deepEqual(
+    edges.map((edge) => `${edge.from}->${edge.to}:${edge.label}`).sort(),
+    ['A->B:gọi', 'A->C:gọi']
+  );
+});
+
+test('parsePathComment bỏ qua chú thích thường', () => {
+  assert.equal(parsePathComment('%% Mỗi cạnh là một import thật'), null);
+  assert.deepEqual(parsePathComment('%% path A=src/a.ts'), { id: 'A', path: 'src/a.ts' });
 });
