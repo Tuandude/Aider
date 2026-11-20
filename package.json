@@ -1,0 +1,19 @@
+{
+  "name": "aider",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Every node in your architecture diagram must map to a real file.",
+  "workspaces": [
+    "core",
+    "cli",
+    "backend"
+  ],
+  "scripts": {
+    "build": "npm run build -w aider-core && npm run build -w aider-cli && npm run build -w gitstory-backend",
+    "test": "npm run build -w aider-core && node --test \"core/dist/__tests__/*.test.js\""
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0",
+    "typescript": "^5.2.0"
+  }
+}

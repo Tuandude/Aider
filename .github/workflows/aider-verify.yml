@@ -1,0 +1,89 @@
+name: Aider Verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+      # Không cần secret, không gọi mạng: sơ đồ hoặc ánh xạ tới file thật, hoặc CI đỏ.
+      - name: Verify architecture diagram
+        run: node cli/dist/index.js verify
+
+  # Bình luận kết quả kiểm chứng lên PR. Không cần server, không có URL công khai,
+  # và checkout cả repo nên kiểm tra được cả cạnh lệch.
+  review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Verify and build report
+        id: verify
+        run: |
+          set +e
+          node cli/dist/index.js verify --markdown > "$RUNNER_TEMP/report.md"
+          echo "exit=$?" >> "$GITHUB_OUTPUT"
+
+      # Cập nhật bình luận cũ nếu có, để mỗi lần push không sinh thêm bình luận trùng.
+      - name: Post or update PR comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.number }}
+        run: |
+          existing=$(gh api "repos/${{ github.repository }}/issues/$PR/comments" \
+            --jq '.[] | select(.body | contains("<!-- AIDER-REVIEW -->")) | .id' | head -n1)
+          if [ -n "$existing" ]; then
+            gh api -X PATCH "repos/${{ github.repository }}/issues/comments/$existing" \
+              -F body=@"$RUNNER_TEMP/report.md" > /dev/null
+            echo "Đã cập nhật bình luận $existing."
+          else
+            gh pr comment "$PR" --body-file "$RUNNER_TEMP/report.md"
+          fi
+
+      - name: Fail when the diagram drifts from the code
+        if: steps.verify.outputs.exit != '0'
+        run: |
+          echo "Kiểm chứng sơ đồ thất bại (exit ${{ steps.verify.outputs.exit }})."
+          exit 1

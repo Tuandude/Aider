@@ -1,16 +1,19 @@
 {
   "name": "aider-cli",
-  "version": "1.0.0",
-  "description": "Aider AI CLI client",
+  "version": "2.0.0",
+  "description": "Aider CLI: verify architecture diagrams against real files",
   "main": "dist/index.js",
   "bin": {
     "aider": "./dist/index.js"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js"
+    "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "aider-core": "1.0.0",
     "axios": "^1.6.0",
     "commander": "^11.1.0",
     "dotenv": "^16.3.0"
