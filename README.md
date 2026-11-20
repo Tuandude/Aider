@@ -88,3 +88,5 @@ Xem `docs/self_hosting_guide.md` để triển khai bằng Docker. Lưu ý: buil
 ## License
 
 MIT
+
+<!-- test AI review -->
