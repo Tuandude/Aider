@@ -66,6 +66,54 @@ jobs:
           node cli/dist/index.js verify --markdown > "$RUNNER_TEMP/report.md"
           echo "exit=$?" >> "$GITHUB_OUTPUT"
 
+      # Bước AI: đề xuất sơ đồ, nhưng mọi node vẫn phải chứng minh bằng file có thật.
+      # `propose` tự loại đề xuất không có evidence, nên kể cả mô hình sai thì sơ đồ
+      # không bị bịa. Không đặt `set -e`: bước này là khuyến nghị, không được làm đỏ CI,
+      # và không được che kết quả `verify` ở trên.
+      - name: Propose diagram update (AI)
+        if: vars.AIDER_AI_REVIEW == 'on'
+        env:
+          AIDER_LLM_API_KEY: ${{ secrets.AIDER_LLM_API_KEY }}
+          AIDER_LLM_BASE_URL: ${{ vars.AIDER_LLM_BASE_URL }}
+          AIDER_LLM_MODEL: ${{ vars.AIDER_LLM_MODEL }}
+          REPORT: ${{ runner.temp }}/report.md
+        run: |
+          {
+            echo ""
+            echo "### Đề xuất từ AI"
+          } >> "$REPORT"
+
+          if [ -z "$AIDER_LLM_API_KEY" ]; then
+            echo "" >> "$REPORT"
+            echo "_Chưa cấu hình \`AIDER_LLM_API_KEY\` — bỏ qua bước đề xuất._" >> "$REPORT"
+            exit 0
+          fi
+
+          set +e
+          node cli/dist/index.js propose --dry-run > "$RUNNER_TEMP/proposal.txt" 2>&1
+          code=$?
+          set -e
+
+          if [ "$code" -ne 0 ]; then
+            {
+              echo ""
+              echo "Không đề xuất được (exit $code):"
+              echo '```'
+              tail -n 20 "$RUNNER_TEMP/proposal.txt"
+              echo '```'
+            } >> "$REPORT"
+            exit 0
+          fi
+
+          {
+            echo ""
+            echo "Sơ đồ hiện tại đã qua kiểm chứng; dưới đây là đề xuất của mô hình. Đề xuất không kèm"
+            echo "đường dẫn file có thật đã bị loại tự động trước khi in ra."
+            echo '```mermaid'
+            sed -n '/^graph /,/^$/p' "$RUNNER_TEMP/proposal.txt"
+            echo '```'
+          } >> "$REPORT"
+
       # Cập nhật bình luận cũ nếu có, để mỗi lần push không sinh thêm bình luận trùng.
       - name: Post or update PR comment
         env:
