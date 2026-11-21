@@ -73,6 +73,8 @@ flowchart TD
 ```
 <!-- AIDER:END -->
 
+[_🖱️ Bản đồ tương tác — kéo, thu phóng, nhấp vào node để xem chi tiết_](https://tuandude.github.io/Aider/)
+
 ## Cách cài
 
 ```bash
