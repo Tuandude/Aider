@@ -1,9 +1,14 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
+import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import { registerVerify } from './commands/verify';
 import { registerPropose } from './commands/propose';
+
+// .env nằm ở gốc workspace (hai cấp trên entry point), giúp `propose` chạy nội bộ
+// mà không cần export biến môi trường trước.
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const program = new Command();
 

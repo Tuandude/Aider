@@ -10,7 +10,8 @@ import { loadProjectDocs } from './utils/docsLoader';
 import { checkDiagram, renderDiagramCheck, renderProposedDiagram } from './utils/diagramCheck';
 import { DEFAULT_BASE_URL, DEFAULT_MODEL, createCompleter, parseJsonResponse, readLlmConfig } from './llm';
 
-dotenv.config();
+// .env nằm ở gốc workspace (hai cấp trên entry point, dù chạy từ src/ hay dist/).
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const app = express();
 const githubService = new GitHubService();

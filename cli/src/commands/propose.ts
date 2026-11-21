@@ -20,8 +20,8 @@ export async function runPropose(options: ProposeCommandOptions): Promise<number
   if (!llm) {
     console.error(
       'Lỗi: thiếu AIDER_LLM_API_KEY. `propose` cần LLM; `verify` thì không.\n' +
-        '  AIDER_LLM_BASE_URL  (mặc định http://127.0.0.1:8317/v1)\n' +
-        '  AIDER_LLM_MODEL     (mặc định glm-flash)'
+        '  AIDER_LLM_BASE_URL  (mặc định https://api-cdn.deploy.com/api/v1)\n' +
+        '  AIDER_LLM_MODEL     (mặc định zai-org/glm-5.3-flash)'
     );
     return 2;
   }

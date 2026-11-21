@@ -89,19 +89,19 @@ docker rm -f aider
 #### Cấu hình các biến môi trường (Environment Variables):
 Bạn cần thiết lập các biến môi trường sau cho Server của mình:
 - `AIDER_LLM_API_KEY`: Khoá gọi mô hình. **Bắt buộc** — thiếu nó, `/api/commit` trả HTTP 500 và webhook không phân tích được PR.
-- `AIDER_LLM_BASE_URL`: Endpoint tương thích OpenAI. Mặc định `http://127.0.0.1:8317/v1`.
-- `AIDER_LLM_MODEL`: Tên model. Mặc định `glm-flash`.
+- `AIDER_LLM_BASE_URL`: Endpoint tương thích OpenAI. Mặc định `https://api-cdn.deploy.com/api/v1`.
+- `AIDER_LLM_MODEL`: Tên model. Mặc định `zai-org/glm-5.3-flash`.
 - `GITHUB_TOKEN`: GitHub PAT bạn vừa tạo ở Bước 1.
 - `WEBHOOK_SECRET`: Một mật khẩu tự chọn để xác thực webhook (ví dụ: `my-super-secret-123`).
 
-> **Endpoint mặc định là `127.0.0.1`.** Nếu chạy trong container hoặc trên cloud, phải đặt `AIDER_LLM_BASE_URL` trỏ tới một endpoint mà server truy cập được — `127.0.0.1` trong container là chính container đó.
+> **Endpoint mặc định là endpoint công khai của deploy.com.** Đảm bảo server có kết nối internet ra ngoài để gọi được endpoint này; nếu dùng nhà cung cấp khác, đặt `AIDER_LLM_BASE_URL` trỏ tới endpoint tương ứng.
 
 > **`WEBHOOK_SECRET` là bắt buộc.** Thiếu biến này, server **từ chối khởi động** (exit code `1`) chứ không chạy ở chế độ bỏ xác thực. Route webhook là đầu vào công khai duy nhất; nếu bỏ qua xác thực chữ ký, bất kỳ ai biết URL đều gửi được payload giả để bot bình luận lên PR của bạn.
 
 *Lưu ý: Nếu sử dụng Cloud Run, bạn cần cấu hình cờ `--no-cpu-throttling` để giữ CPU luôn hoạt động cho các tác vụ ngầm (tránh bị Cloud Run tắt container trước khi AI phân tích xong). Chạy lệnh sau để thiết lập biến môi trường và tắt CPU throttling:*
 ```bash
 gcloud run services update aider-backend \
-  --update-env-vars AIDER_LLM_API_KEY=YOUR_KEY,AIDER_LLM_BASE_URL=YOUR_ENDPOINT,AIDER_LLM_MODEL=glm-flash,GITHUB_TOKEN=YOUR_GITHUB_TOKEN,WEBHOOK_SECRET=YOUR_SECRET \
+  --update-env-vars AIDER_LLM_API_KEY=YOUR_KEY,AIDER_LLM_BASE_URL=YOUR_ENDPOINT,AIDER_LLM_MODEL=zai-org/glm-5.3-flash,GITHUB_TOKEN=YOUR_GITHUB_TOKEN,WEBHOOK_SECRET=YOUR_SECRET \
   --no-cpu-throttling \
   --region us-central1
 ```

@@ -7,8 +7,8 @@ export interface LlmConfig {
   model: string;
 }
 
-export const DEFAULT_BASE_URL = 'http://127.0.0.1:8317/v1';
-export const DEFAULT_MODEL = 'glm-flash';
+export const DEFAULT_BASE_URL = 'https://api-cdn.deploy.com/api/v1';
+export const DEFAULT_MODEL = 'zai-org/glm-5.3-flash';
 
 /**
  * Đọc cấu hình LLM. `null` nghĩa là server không gọi được mô hình nào.

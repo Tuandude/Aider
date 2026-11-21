@@ -108,8 +108,8 @@ node cli/dist/index.js init
 | Biến | Mặc định | Ý nghĩa |
 |---|---|---|
 | `AIDER_LLM_API_KEY` | *(bắt buộc)* | Khoá gọi mô hình. Thiếu nó, `propose` thoát code `2` và `verify` không bị ảnh hưởng. |
-| `AIDER_LLM_BASE_URL` | `http://127.0.0.1:8317/v1` | Endpoint. Đổi sang nhà cung cấp khác nếu cần. |
-| `AIDER_LLM_MODEL` | `glm-flash` | Tên model gửi trong request. |
+| `AIDER_LLM_BASE_URL` | `https://api-cdn.deploy.com/api/v1` | Endpoint. Đổi sang nhà cung cấp khác nếu cần. |
+| `AIDER_LLM_MODEL` | `zai-org/glm-5.3-flash` | Tên model gửi trong request. |
 
 ## Tự động bình luận lên Pull Request
 
