@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { registerVerify } from './commands/verify';
 import { registerPropose } from './commands/propose';
+import { registerMap } from './commands/map';
 
 // .env nằm ở gốc workspace (hai cấp trên entry point), giúp `propose` chạy nội bộ
 // mà không cần export biến môi trường trước.
@@ -47,5 +48,6 @@ program
 
 registerVerify(program);
 registerPropose(program);
+registerMap(program);
 
 program.parse(process.argv);

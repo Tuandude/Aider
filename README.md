@@ -46,9 +46,11 @@ flowchart TD
   class PROPOSE,VERIFY,MERMAID,RESOLVE core
   class CMD_VERIFY,REPORT,CMD_PROPOSE,LLM_CLI cli
   class SERVER,DOCS_LOADER,GITHUB_SVC,LLM_BACKEND,DIAGRAM_CHECK,DIFF_FILTER backend
-  style CORE fill:#f0fdf4,stroke:#15803d,stroke-width:2px
-  style CLI fill:#eff6ff,stroke:#1d4ed8,stroke-width:2px
-  style BACKEND fill:#fff7ed,stroke:#c2410c,stroke-width:2px
+  %% GitHub dark mode kế chữ tiêu đề nhóm từ nền tối, không khai báo color thì
+  %% tiêu đề near-invisible. Màu chữ lấy từ color của classDef cùng nhóm.
+  style CORE fill:#f0fdf4,stroke:#15803d,stroke-width:2px,color:#14532d
+  style CLI fill:#eff6ff,stroke:#1d4ed8,stroke-width:2px,color:#1e3a8a
+  style BACKEND fill:#fff7ed,stroke:#c2410c,stroke-width:2px,color:#7c2d12
 
   %% Mỗi dòng dưới đây gắn một node với file nguồn của nó. Chú thích không được vẽ ra
   %% hình, nên sơ đồ chỉ hiện tên; bộ kiểm chứng vẫn đọc được đường dẫn.
@@ -95,11 +97,21 @@ node cli/dist/index.js verify --json
 node cli/dist/index.js propose --dry-run
 node cli/dist/index.js propose --write
 
+# Sinh bản đồ kiến trúc tương tác (HTML tự trọn vẹn, mở offline)
+node cli/dist/index.js map
+node cli/dist/index.js map --open
+
 # Cài git hook tự động sinh commit message
 node cli/dist/index.js init
 ```
 
 `verify` trả exit code `1` khi có node không ánh xạ tới file nào — cắm thẳng vào CI (xem `.github/workflows/aider-verify.yml`).
+
+### Bản đồ tương tác
+
+`map` sinh `aider-map.html` — một file HTML duy nhất nhúng sẵn bundle mermaid và kết quả kiểm chứng, mở được trực tiếp qua `file://` mà không cần mạng. Trang giữ nguyên thân sơ đồ trong README (subgraph, classDef, style, chú thích `%% path`), tô viền từng node theo trạng thái (xanh OK, vàng AMBIGUOUS, đỏ UNMAPPED), và khi nhấp vào node sẽ hiện panel chi tiết: id, nhãn, file ánh xạ, lý do. Kéo để di chuyển, cuộn để thu phóng, `+`/`−`/`F`/`0` trên bàn phím tương ứng phóng to/thu nhỏ/vừa khung/đặt lại.
+
+Tùy chọn: `--out <file>` đổi nơi ghi (mặc định `aider-map.html`), `--open` mở trình duyệt sau khi ghi, `--path <dir>` và `--readme <file>` chỉ định repo và file sơ đồ. Lệnh trả exit code `0` khi ghi được file (kể cả khi sơ đồ còn node lỗi — bản đồ vẫn hữu ích để ngắm lỗi), `2` khi lỗi verify.
 
 ### Cấu hình LLM
 
